@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "world.tokenbank/tokenbank",
   "title": "TokenBank — tokenized real-world assets",
-  "description": "4,168 tokenized real-world assets: yield, risk, and who is actually allowed to buy each one",
-  "version": "1.7.0",
+  "description": "4,500+ tokenized real-world assets and stock perps — issuer, yield, rights, target market, compared",
+  "version": "1.8.0",
   "websiteUrl": "https://tokenbank.world",
   "remotes": [
     {

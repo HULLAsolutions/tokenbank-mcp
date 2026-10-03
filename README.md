@@ -1,8 +1,9 @@
 # TokenBank MCP Server
 
-An MCP server over **4,168 tokenized real-world assets** — tokenized treasuries,
-yield stablecoins, gold, real estate, tokenized stocks and staking — with the
-field most datasets leave out: **who is actually allowed to buy each one.**
+An MCP server over **4,500+ tokenized real-world assets** — tokenized treasuries,
+yield stablecoins, gold, real estate, tokenized stocks and staking — plus the
+**Hyperliquid perpetuals** on the same stocks. Built around one question most
+datasets skip: *several products track the same thing — how do they differ?*
 
 No API key. No sign-up. Read-only.
 
@@ -23,34 +24,51 @@ Any MCP client works; the endpoint speaks Streamable HTTP.
 
 ## Why this exists
 
-Most RWA datasets answer *what exists* and *how big it is*. The harder question
-for anyone actually investing is **whether they are allowed to hold it** — and
-the answer differs per instrument, per issuer and per country.
+Apple exists on-chain as seven separate tokens from different issuers. NVIDIA as
+eight, plus a perpetual future. They share a price driver and almost nothing
+else: issuer, legal wrapper, holder rights, chain, custody, KYC gates and cost
+all differ — and a perp is not ownership at all.
 
-For real-world assets the gate to *mint* and the gate to *buy on a secondary
-market* routinely differ: a fund can be permissioned at the issuer while its
-token trades freely. And where several issuers tokenize the *same* security, one
-of them may be reachable for EU retail while another is closed. That comparison
-is what this server is built around.
+TokenBank keeps the **underlying** (the company, ETF or bond) apart from the
+**instrument** (one issuer's token on it), so these can be compared side by side
+instead of appearing as unrelated rows. See it on the web:
+[every security tokenized more than once](https://tokenbank.world/underlyings) ·
+[NVIDIA, compared](https://tokenbank.world/underlying/nvda) ·
+[Apple, compared](https://tokenbank.world/underlying/aapl).
+
+**Target / Area, not eligibility.** Records carry `targetArea` — whom the issuer
+aims a product at (retail, professional, institutional) and in which market (EU,
+US, UK, …), as the issuer states it. It describes the product; it is not a check
+of whether *you* may buy it. That is set by the issuer's own terms, and the
+server says so instead of guessing.
 
 ## Tools
 
 | Tool | What it answers |
 |---|---|
+| `compare_tokenized_access` | For a security with more than one way in: every token on it (issuer, structure, KYC gates, custody, chain, target/area) **and every Hyperliquid perp** (fees, 7-day funding, leverage, what the contract references). Also covers stocks that trade on-chain only as a perp. |
+| `find_tokenized_security` | Does a tokenized version of a company, ETF or bond exist, and from which issuer? Backed / xStocks, Ondo Global Markets, Aktionariat, Binaryx, plus Dinari, Coinbase, Robinhood Chain and others. |
 | `search_yield_products` | Search and filter the instruments for earning yield with crypto. |
-| `get_product_details` | Full record for one instrument by ticker: yield, risk, custody, availability, how to buy, source, verification date. |
-| `compare_assets` | Two or more instruments side by side on the fields that decide between them — including the three access gates. |
+| `get_product_details` | Full record for one instrument by ticker: yield, risk, custody, target/area, how to buy, source, verification date. |
+| `compare_assets` | Two or more instruments side by side on the fields that decide between them, including the three KYC gates. |
 | `compare_with_savings_account` | Low-risk, instant-access instruments against a bank savings rate, with the honest trade-offs rather than just the bigger number. |
-| `find_permissionless_assets` | What a self-custody wallet can buy without KYC and hold itself. Strict by design: merely unverified access is excluded, not included. |
-| `find_tokenized_security` | Does a tokenized version of a company, ETF or bond exist, and from which issuer? |
-| `compare_tokenized_access` | For a security tokenized by more than one issuer: every token on it, with a verdict on **who may buy each**. |
-| `search_realt_properties` | The individual tokenized US rental properties behind RealT, each with net rental yield, token price, monthly rent and occupancy. |
+| `find_permissionless_assets` | What a self-custody wallet can buy on a secondary market without KYC and hold itself. Strict: unverified access is excluded, not included. |
+| `search_realt_properties` | The individual tokenized US rental properties behind RealT, each with net rental yield, rent history and a page of its own. |
 | `get_market_coverage` | Which countries this dataset can see into, which it cannot, and why. |
 | `get_market_stats` | Shape and freshness of the dataset. |
 
 Every tool is annotated `readOnlyHint: true` — nothing here writes, charges or
 sends — and declares an `outputSchema`, so a client can type the answer instead
-of parsing a string.
+of parsing a string. Every record links to its page on tokenbank.world.
+
+## Perps, honestly
+
+The stock perpetuals come from Hyperliquid's public API (HIP-3 markets such as
+XYZ and Paragon), refreshed daily. Each is mapped to its underlying from the
+venue's own description of what the contract references — so an ADS worth 1/10
+of a share stays apart from the share itself. Fees are stated at the entry tier,
+checked against real fills; the front end you trade through may add its own.
+TokenBank takes no fee and has no referral on any of them.
 
 ## Two tiers, never silently mixed
 
@@ -58,36 +76,33 @@ of parsing a string.
   can answer *"what does this pay"*. Ranking tools use this tier by default and
   report how many rows they left out.
 - **Imported** — issuer-catalogue rows carrying identity, classification and
-  access terms, but no figures. Use them for *"is X tokenized"*, never for yield
+  target/area, but no figures. Use them for *"is X tokenized"*, never for yield
   rankings.
 
-Every record carries its `tier`. Counts are reported per tier rather than as one
-number, because a single total would read as *"this is all verified"* when four
-fifths of it is catalogue.
+Every record carries its `tier`.
 
 ## Paging
 
 Tools returning lists accept `offset` and cap `limit` at 100. The answer carries
-`nextOffset` while more remains, and omits it at the end — so walking the full
-catalogue is a loop, not a guess.
+`nextOffset` while more remains, and omits it at the end.
 
 ## Honest limits
 
 - **Yields are variable and not guaranteed.** Figures come from the issuers and
   their published catalogues; they are sourced, not audited.
-- **Availability differs per country.** `euAccess` states what the issuer said —
-  and "not stated" is reported as unknown rather than quietly treated as open.
+- **Who may buy is set by the issuer.** `targetArea` describes the product; an
+  empty list means nothing is stated, not that the product is closed.
 - **Not investment advice.** Every response carries this disclaimer.
 - Some markets are structurally invisible to any public dataset: Japanese and
   Korean security tokens run on permissioned chains with domestic-only
-  distribution. `get_market_coverage` says so explicitly instead of returning an
-  empty list that looks like an answer.
+  distribution. `get_market_coverage` says so explicitly.
 
-## Related
+## Also without MCP
 
-- Website and instrument pages: [tokenbank.world](https://tokenbank.world)
-- Open REST API, also without a key: `https://tokenbank.world/api/v1/assets`
+- Open REST API, no key: [`/api/v1/assets`](https://tokenbank.world/api/v1/assets) ·
+  [`/api/v1/underlyings`](https://tokenbank.world/api/v1/underlyings)
 - Machine-readable overview: [`llms.txt`](https://tokenbank.world/llms.txt)
+- Issuers and their catalogues: [tokenbank.world/issuers](https://tokenbank.world/issuers)
 
 ## License
 
