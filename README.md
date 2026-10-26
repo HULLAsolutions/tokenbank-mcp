@@ -1,9 +1,14 @@
 # TokenBank MCP Server
 
-An MCP server over **4,500+ tokenized real-world assets** — tokenized treasuries,
+An MCP server over **8,700+ tokenized real-world assets** — tokenized treasuries,
 yield stablecoins, gold, real estate, tokenized stocks and staking — plus the
-**Hyperliquid perpetuals** on the same stocks. Built around one question most
-datasets skip: *several products track the same thing — how do they differ?*
+**Hyperliquid perpetuals** on the same stocks. Built around two questions most
+datasets skip: *several products track the same thing — how do they differ?* and
+*how does an AI agent actually buy one on its own?*
+
+**14 read-only tools**, including a purchase path for every curated token: which
+tokens a bot can buy straight from its own wallet, which need its owner onboarded
+once, and the exact steps, verified contract and trading venues for each.
 
 No API key. No sign-up. Read-only.
 
@@ -21,6 +26,32 @@ Any MCP client works; the endpoint speaks Streamable HTTP.
 | **Protocol** | `2025-06-18`, `2025-03-26`, `2024-11-05` |
 | **Auth** | none |
 | **Website** | [tokenbank.world](https://tokenbank.world) |
+
+## For AI agents: from discovery to purchase
+
+Start with **`get_agent_buying_guide`** (or `GET https://tokenbank.world/api/v1/agents`).
+It returns the whole how-to as data — six steps from wallet to confirmed purchase,
+each with the MCP or API call to make:
+
+1. **Find candidates** — `find_permissionless_assets`, `search_yield_products`
+2. **Get the purchase path for one token** — `get_purchase_steps { "ticker": "syrupUSDC" }`
+3. **Verify the contract** — the verified address per chain comes with the path
+4. **Fund the wallet** — network and stablecoin pair to hold
+5. **Approve, simulate, buy** — exact-amount approval, simulation first
+6. **Confirm and know the exit** — redemption terms, KYC at redemption, settlement
+
+Every curated token gets one of three purchase paths:
+
+| Path | Meaning |
+|---|---|
+| `wallet-only` | A self-custody wallet buys it on a secondary market with no identity check (yield stablecoins, staking, DeFi lending, some treasuries) |
+| `onboarding` | A person is onboarded once with the issuer; the agent then operates the approved wallet (most tokenized funds) |
+| `platform` | Bought inside a platform account |
+
+The server **describes** a purchase; it never builds, signs or sends a
+transaction. Who may buy is set by the issuer's terms and the buyer's own law —
+the server says so instead of guessing. Human-readable version:
+[tokenbank.world/agents](https://tokenbank.world/agents).
 
 ## Why this exists
 
@@ -46,14 +77,18 @@ server says so instead of guessing.
 
 | Tool | What it answers |
 |---|---|
-| `compare_tokenized_access` | For a security with more than one way in: every token on it (issuer, structure, KYC gates, custody, chain, target/area) **and every Hyperliquid perp** (fees, 7-day funding, leverage, what the contract references). Also covers stocks that trade on-chain only as a perp. |
-| `find_tokenized_security` | Does a tokenized version of a company, ETF or bond exist, and from which issuer? Backed / xStocks, Ondo Global Markets, Aktionariat, Binaryx, plus Dinari, Coinbase, Robinhood Chain and others. |
+| `get_agent_buying_guide` | Start here when an agent or bot should buy tokens on its own: the six steps with calls, purchase paths with live counts, which asset classes a wallet reaches without KYC, wallet-only candidates by yield, guardrails. |
+| `get_purchase_steps` | How an agent buys ONE token: purchase path, the three KYC gates, network and verified contract, issuer route, measured trading venues, ordered steps and how to exit. |
+| `find_permissionless_assets` | What a self-custody wallet can buy on a secondary market without KYC and hold itself. Strict: unverified access is excluded, not included. |
+| `find_answer` | Answer pages and guides for a natural-language question — "can I buy Tesla as a token", "best stablecoin yield on Base". |
 | `search_yield_products` | Search and filter the instruments for earning yield with crypto. |
 | `get_product_details` | Full record for one instrument by ticker: yield, risk, custody, target/area, how to buy, source, verification date. |
-| `compare_assets` | Two or more instruments side by side on the fields that decide between them, including the three KYC gates. |
-| `compare_with_savings_account` | Low-risk, instant-access instruments against a bank savings rate, with the honest trade-offs rather than just the bigger number. |
-| `find_permissionless_assets` | What a self-custody wallet can buy on a secondary market without KYC and hold itself. Strict: unverified access is excluded, not included. |
-| `search_realt_properties` | The individual tokenized US rental properties behind RealT, each with net rental yield, rent history and a page of its own. |
+| `compare_assets` | Two or more instruments side by side on yield, risk, minimum, custody, KYC gates, issuer and verification date. |
+| `compare_with_savings_account` | Low-risk, instant-access instruments against a typical bank savings rate, with the trade-offs. |
+| `find_tokenized_security` | Does a tokenized version of a company, ETF or bond exist, and from which issuer? By name, ticker, ISIN or a plain question, across all issuer catalogues. |
+| `compare_tokenized_access` | For a security tokenized by more than one issuer: every token on it side by side, plus every Hyperliquid perpetual on it. |
+| `search_realt_properties` | The individual tokenized US rental properties behind RealT, each with net rental yield and rent history. |
+| `get_country_registers` | Official registers of tokenized assets and digital-asset firms for 250 jurisdictions. |
 | `get_market_coverage` | Which countries this dataset can see into, which it cannot, and why. |
 | `get_market_stats` | Shape and freshness of the dataset. |
 
@@ -100,7 +135,10 @@ Tools returning lists accept `offset` and cap `limit` at 100. The answer carries
 ## Also without MCP
 
 - Open REST API, no key: [`/api/v1/assets`](https://tokenbank.world/api/v1/assets) ·
-  [`/api/v1/underlyings`](https://tokenbank.world/api/v1/underlyings)
+  [`/api/v1/underlyings`](https://tokenbank.world/api/v1/underlyings) ·
+  [`/api/v1/agents`](https://tokenbank.world/api/v1/agents) (agent buying guide) ·
+  [`/api/v1/guides`](https://tokenbank.world/api/v1/guides) (every guide as JSON, `?topic=agents`)
+- Agent buying guide for humans: [tokenbank.world/agents](https://tokenbank.world/agents)
 - Machine-readable overview: [`llms.txt`](https://tokenbank.world/llms.txt)
 - Issuers and their catalogues: [tokenbank.world/issuers](https://tokenbank.world/issuers)
 
