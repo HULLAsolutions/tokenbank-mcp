@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "world.tokenbank/tokenbank",
   "title": "TokenBank — tokenized real-world assets",
-  "description": "8,700 tokenized assets compared, and how an AI agent buys each one: purchase path, steps, contract",
-  "version": "1.11.0",
+  "description": "9,000 tokenized assets and DeFi yields: risk levels, AI-agent portfolios, how a bot buys each",
+  "version": "1.12.0",
   "websiteUrl": "https://tokenbank.world",
   "remotes": [
     {

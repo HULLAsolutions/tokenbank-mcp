@@ -1,14 +1,16 @@
 # TokenBank MCP Server
 
-An MCP server over **8,700+ tokenized real-world assets** — tokenized treasuries,
-yield stablecoins, gold, real estate, tokenized stocks and staking — plus the
-**Hyperliquid perpetuals** on the same stocks. Built around two questions most
-datasets skip: *several products track the same thing — how do they differ?* and
-*how does an AI agent actually buy one on its own?*
+An MCP server over **9,000 tokenized real-world assets and DeFi yields** —
+tokenized treasuries, yield stablecoins, private credit, reinsurance tokens,
+bonds, gold, real estate, tokenized stocks, staking, lending markets and DEX
+liquidity pools — plus the **Hyperliquid perpetuals** on the same stocks. Built
+around three questions most datasets skip: *several products track the same
+thing — how do they differ?*, *how does an AI agent actually buy one on its own?*
+and *how should it spread its money instead of betting on one contract?*
 
-**14 read-only tools**, including a purchase path for every curated token: which
-tokens a bot can buy straight from its own wallet, which need its owner onboarded
-once, and the exact steps, verified contract and trading venues for each.
+**15 read-only tools**, including a purchase path for every token an agent can
+buy, a risk level 1–5 with its reasons, and **`build_portfolio`**: one amount
+spread over several sources of yield, with the reasons an agent can read.
 
 No API key. No sign-up. Read-only.
 
@@ -27,6 +29,35 @@ Any MCP client works; the endpoint speaks Streamable HTTP.
 | **Auth** | none |
 | **Website** | [tokenbank.world](https://tokenbank.world) |
 
+## For AI agents: spread it — `build_portfolio`
+
+Buying more than one product? Call **`build_portfolio { "amount_usd": 1000, "max_risk": 3 }`**
+(or `GET https://tokenbank.world/api/v1/agents/portfolio?amount_usd=1000&max_risk=3`).
+An agent that always buys the single highest yield puts every dollar on one
+contract; one depeg, exploit or default then takes everything. The tool returns:
+
+- **Blocks** — one product per category within the risk budget, never the same
+  exposure twice (five staked-ETH tokens are one exposure; a Pendle PT carries its
+  underlying's), each paying at least the 13-week T-bill, each checked at its own
+  amount (gas per chain included), equal weights under a cap (default 30 %).
+- **Admixture** — 10 % in a product above the risk budget for extra yield, its
+  possible loss capped by its size (`admixture_pct`, 0 switches it off).
+- **Categories** — median yield, range and risk levels per category.
+- **Summary and why** — yield of the blocks vs. the single best product, the worst
+  single failure as % of the amount, failures on record (xUSD, USDX, Penpie).
+- **Guide** — the steps (then `get_purchase_steps` per block) and when to rebalance.
+
+Live example at [tokenbank.world/agents/portfolio](https://tokenbank.world/agents/portfolio).
+For one purchase, `GET /api/v1/agents/evaluate?amount_usd=100&max_risk=3` checks
+every option against an amount and a risk budget — each check with value, limit
+and result, `chosen` and `backup` — the record a bot keeps of its decision.
+
+**Risk levels 1–5** come from measurable signals only: source of yield (government
+debt, borrowers, staking, trading fees, reinsurance, strategy), spread over the
+13-week T-bill, size, exit liquidity, route, impermanent loss for pools. Every
+level carries its reasons; unknown counts as the higher risk. Descriptive, not
+advice. Products of a related project carry `relatedToOperator`.
+
 ## For AI agents: from discovery to purchase
 
 Start with **`get_agent_buying_guide`** (or `GET https://tokenbank.world/api/v1/agents`).
@@ -44,7 +75,7 @@ Every curated token gets one of three purchase paths:
 
 | Path | Meaning |
 |---|---|
-| `wallet-only` | A self-custody wallet buys it on a secondary market with no identity check (yield stablecoins, staking, DeFi lending, some treasuries) |
+| `wallet-only` | A self-custody wallet buys it on a secondary market with no identity check (yield stablecoins, staking, DeFi lending, liquidity pools, Pendle fixed rates, some treasuries and reinsurance tokens) |
 | `onboarding` | A person is onboarded once with the issuer; the agent then operates the approved wallet (most tokenized funds) |
 | `platform` | Bought inside a platform account |
 
@@ -77,6 +108,7 @@ server says so instead of guessing.
 
 | Tool | What it answers |
 |---|---|
+| `build_portfolio` | Spread an amount over several sources of yield: blocks, admixture, median yield per category, why spreading beats the single best, steps and rebalancing. |
 | `get_agent_buying_guide` | Start here when an agent or bot should buy tokens on its own: the six steps with calls, purchase paths with live counts, which asset classes a wallet reaches without KYC, wallet-only candidates by yield, guardrails. |
 | `get_purchase_steps` | How an agent buys ONE token: purchase path, the three KYC gates, network and verified contract, issuer route, measured trading venues, ordered steps and how to exit. |
 | `find_permissionless_assets` | What a self-custody wallet can buy on a secondary market without KYC and hold itself. Strict: unverified access is excluded, not included. |
@@ -137,9 +169,12 @@ Tools returning lists accept `offset` and cap `limit` at 100. The answer carries
 - Open REST API, no key: [`/api/v1/assets`](https://tokenbank.world/api/v1/assets) ·
   [`/api/v1/underlyings`](https://tokenbank.world/api/v1/underlyings) ·
   [`/api/v1/agents`](https://tokenbank.world/api/v1/agents) (agent buying guide) ·
+  [`/api/v1/agents/portfolio`](https://tokenbank.world/api/v1/agents/portfolio) (portfolio) ·
+  [`/api/v1/agents/evaluate`](https://tokenbank.world/api/v1/agents/evaluate) (checks for one budget) ·
+  [`/data/agent-buyable.json`](https://tokenbank.world/data/agent-buyable.json) (every agent-buyable product with route, gas, risk level) ·
   [`/api/v1/guides`](https://tokenbank.world/api/v1/guides) (every guide as JSON, `?topic=agents`)
 - Agent buying guide for humans: [tokenbank.world/agents](https://tokenbank.world/agents)
-- Machine-readable overview: [`llms.txt`](https://tokenbank.world/llms.txt)
+- Machine-readable overview: [`llms.txt`](https://tokenbank.world/llms.txt) · [`openapi.json`](https://tokenbank.world/openapi.json)
 - Issuers and their catalogues: [tokenbank.world/issuers](https://tokenbank.world/issuers)
 
 ## License
